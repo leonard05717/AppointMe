@@ -501,7 +501,7 @@ function Home() {
     const { data: _, error } = await supabase.auth.resetPasswordForEmail(
       email,
       {
-        redirectTo: "https://granbyappointment.netlify.app/forgot",
+        redirectTo: "https://granbyappoint.netlify.app/forgot",
       }
     );
     if (error) {
