@@ -125,11 +125,11 @@ function Home() {
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [account, setAccount] = useState<UserProps | undefined | null>(
-    undefined
+    undefined,
   );
   const [active, setActive] = useState(0);
   const [allAppointments, setAllAppointments] = useState<AppointmentProps[]>(
-    []
+    [],
   );
   const [
     forgotPasswordState,
@@ -192,6 +192,24 @@ function Home() {
     });
 
     if (error) {
+      if (error.code === "email_not_confirmed") {
+        displayError(
+          "Email Verification Required",
+          "Your account exists but your email address has not been verified. Please check your email for the verification link before proceeding.",
+        );
+        setLoadingLogin(false);
+        return;
+      }
+
+      if (error.code === "invalid_credentials") {
+        displayError(
+          "Account Not Found",
+          "No account was found using the credentials you entered. Please ensure your email and password are correct.",
+        );
+        setLoadingLogin(false);
+        return;
+      }
+
       displayError("Account Not Found", error.message);
       setLoadingLogin(false);
       return;
@@ -207,7 +225,7 @@ function Home() {
       await supabase.auth.signOut();
       displayError(
         "Account is Disabled, Please enter you user id and password first.",
-        ""
+        "",
       );
       setLoadingLogin(false);
       return;
@@ -231,7 +249,7 @@ function Home() {
   async function logoutEventHandler() {
     const conf = await displayConfirmation(
       "Confirmation",
-      "Are you sure you want to logout?"
+      "Are you sure you want to logout?",
     );
     if (!conf) return;
     notifications.show({
@@ -268,18 +286,22 @@ function Home() {
 
     const conf = await displayConfirmation(
       "Appointment Confirmation",
-      "Are you sure you want to confirm your appointment?"
+      "Are you sure you want to confirm your appointment?",
     );
 
     if (!conf) return;
 
     setLoadingAppointment(true);
-    const priceinsert = steps.step2?.map((v) => {return v.price})
-    const reasoninsert = steps.step2?.map((c) => {return c.reason})
+    const priceinsert = steps.step2?.map((v) => {
+      return v.price;
+    });
+    const reasoninsert = steps.step2?.map((c) => {
+      return c.reason;
+    });
     const qrcode: string = generateRandomString(6).toUpperCase();
 
-    console.log(steps.step2)
-    console.log(priceinsert)
+    console.log(steps.step2);
+    console.log(priceinsert);
     const { error } = await supabase.from("appointments").insert({
       student_id: account.id,
       section_id: selectedSection,
@@ -353,7 +375,7 @@ function Home() {
         rs.auth_id,
         {
           password: rs.password,
-        }
+        },
       );
 
       if (passError) {
@@ -447,7 +469,7 @@ function Home() {
 
   async function viewDetailsEventHandler(appointment: AppointmentProps) {
     const sec = sections.find(
-      (v) => v.id.toString() === appointment.section_id.toString()
+      (v) => v.id.toString() === appointment.section_id.toString(),
     );
     const s = sec && `${sec.course} ${sec.year_level[0]}${sec.section}`;
     closeAppointmentState();
@@ -457,58 +479,94 @@ function Home() {
       },
       size: "lg",
       title: (
-        <Text fw="bold">
+        <Text fw='bold'>
           Code: {appointment.qrcode} ({s})
         </Text>
       ),
       children: (
         <div>
-          <Text size="sm" mb={3}>
+          <Text
+            size='sm'
+            mb={3}
+          >
             Reasons:
           </Text>
-          <List listStyleType="disc">
+          <List listStyleType='disc'>
             {appointment.reasons.map((v, i) => (
               <List.Item key={i}>{v}</List.Item>
             ))}
           </List>
-          <Divider mt={10} mb={7} />
-          <Text size="sm">Your Note:</Text>
-          <Text mb={8} ff="montserrat-bold">
+          <Divider
+            mt={10}
+            mb={7}
+          />
+          <Text size='sm'>Your Note:</Text>
+          <Text
+            mb={8}
+            ff='montserrat-bold'
+          >
             {appointment.note || "-"}
           </Text>
-          <Text size="sm">Staff Name:</Text>
-          <Text mb={8} ff="montserrat-bold">
+          <Text size='sm'>Staff Name:</Text>
+          <Text
+            mb={8}
+            ff='montserrat-bold'
+          >
             {appointment.staff_name ||
               "It hasn't been handled by the staff yet."}
           </Text>
-          <Text size="sm">Staff Message:</Text>
-          <Text mb={8} ff="montserrat-bold">
+          <Text size='sm'>Staff Message:</Text>
+          <Text
+            mb={8}
+            ff='montserrat-bold'
+          >
             {appointment.message || "There's no message from the staff yet."}
           </Text>
-          <Divider mt={10} mb={7} />
-          <Text size="sm">Date and Time:</Text>
-          <Text mb={8} ff="montserrat-bold">{`${formatDate(
-            new Date(appointment.appointment_date)
-          )} | ${appointment.appointment_time}`}</Text>
+          <Divider
+            mt={10}
+            mb={7}
+          />
+          <Text size='sm'>Date and Time:</Text>
+          <Text
+            mb={8}
+            ff='montserrat-bold'
+          >{`${formatDate(new Date(appointment.appointment_date))} | ${
+            appointment.appointment_time
+          }`}</Text>
         </div>
       ),
     });
   }
+
+  // https://granbyappointment.netlify.app/
 
   async function forgotPasswordEventHandler({
     email,
   }: ForgotPasswordFormProps) {
     setLoadingForgotPassword(true);
 
+    const userRequest = await supabase.auth.admin.listUsers();
+    const users = userRequest.data.users;
+
+    if (!users.some((v) => v.email?.toLowerCase() == email.toLowerCase())) {
+      setLoadingForgotPassword(false);
+      displayError(
+        "Email Not Found",
+        "We could not locate an account associated with the email address you entered. Please check and try again.",
+      );
+
+      return;
+    }
+
+    const currentUrl = window.location.href;
+
     const { data: _, error } = await supabase.auth.resetPasswordForEmail(
       email,
       {
-        redirectTo: "https://granbyappoint.netlify.app/forgot",
-      }
+        redirectTo: `${currentUrl}forgot`,
+      },
     );
     if (error) {
-      console.error("Forgot Password Error:", error);
-      console.log("Error details:", error.status);
       setLoadingForgotPassword(false);
       displayError("Something error", error.message || "Unknown error");
       return;
@@ -573,15 +631,15 @@ function Home() {
               prev.map((item) =>
                 item.id === payload.new.id
                   ? (payload.new as AppointmentProps)
-                  : item
-              )
+                  : item,
+              ),
             );
           } else if (payload.eventType === "DELETE") {
             setAppointments((prev) =>
-              prev.filter((item) => item.id !== payload.old.id)
+              prev.filter((item) => item.id !== payload.old.id),
             );
           }
-        }
+        },
       )
       .subscribe();
 
@@ -597,15 +655,17 @@ function Home() {
           } else if (payload.eventType === "UPDATE") {
             setReasons((prev) =>
               prev.map((item) =>
-                item.id === payload.new.id ? (payload.new as ReasonProps) : item
-              )
+                item.id === payload.new.id
+                  ? (payload.new as ReasonProps)
+                  : item,
+              ),
             );
           } else if (payload.eventType === "DELETE") {
             setReasons((prev) =>
-              prev.filter((item) => item.id !== payload.old.id)
+              prev.filter((item) => item.id !== payload.old.id),
             );
           }
-        }
+        },
       )
       .subscribe();
 
@@ -623,15 +683,15 @@ function Home() {
               prev.map((item) =>
                 item.id === payload.new.id
                   ? (payload.new as SectionProps)
-                  : item
-              )
+                  : item,
+              ),
             );
           } else if (payload.eventType === "DELETE") {
             setSections((prev) =>
-              prev.filter((item) => item.id !== payload.old.id)
+              prev.filter((item) => item.id !== payload.old.id),
             );
           }
-        }
+        },
       )
       .subscribe();
 
@@ -645,737 +705,245 @@ function Home() {
 
   if (account === undefined) {
     return (
-      <div className="flex items-center justify-center w-full h-screen font-montserrat-bold">
+      <div className='flex items-center justify-center w-full h-screen font-montserrat-bold'>
         Loading...
       </div>
     );
   }
 
   if (account && account.role !== "student") {
-    return <Navigate to="admin/appointment" replace />;
+    return (
+      <Navigate
+        to='admin/appointment'
+        replace
+      />
+    );
   }
 
   const filteredAppointment = selectedDate
     ? allAppointments.filter(
         (ap) =>
           new Date(ap.appointment_date).toDateString() ===
-          new Date(selectedDate).toDateString()
+          new Date(selectedDate).toDateString(),
       )
     : [];
 
   const pendingAppointments = allAppointments.filter(
     (ap) =>
-      ap.student_id === account?.id && ap.status.toLowerCase() === "pending"
+      ap.student_id === account?.id && ap.status.toLowerCase() === "pending",
   );
 
   return (
-    <div >
-     <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' ,marginBottom:'10px'  , backgroundColor : 'rgb(4, 55, 133)' , paddingTop: '8px' , paddingBottom: ' 8px'}}>
-        <img src="/assets/granbylogowhite.png" alt="Granby Logo" style={{ width: '105px', display: 'flex' , marginRight: '20px'  }} />
-        <h1 style={{fontSize:'35px' , color: 'white' ,  fontWeight:'bold' }}>Granby Colleges of Science and Technology
-        <h6 style={{fontSize:'15px' , display: 'flex' , fontWeight: 'normal' }}> <IconMapPin size={20} color="white" style={{marginRight: '5px'}}/>265-A Ibayo Silangan, Naic, 4110 Cavite
-        </h6>
-        <h6 style={{fontSize:'15px' , display: 'flex' ,  fontWeight: 'normal' }}> <IconPhone size={20} color="white" style={{marginRight: '5px'}}/>(046)4120437</h6>
-        </h1>
-      </header>
-    <Container style={{backgroundColor:'whitesmoke' , boxShadow: '12px 12px 12px gray'}} >
-      
-      <LoadingOverlay visible={loadingPage} />
-
-      <CustomModal
-        title="Account"
-        opened={accountState}
-        onClose={closeAccountState}
-      >
-        <form
-          className="space-y-3"
-          onSubmit={activeAccountForm.onSubmit(submitActiveAccountForm)}
-        >
-          <Group grow justify="start">
-            <TextInput
-              {...activeAccountForm.getInputProps("firstname")}
-              required
-              label="First Name"
-              placeholder="Enter First Name"
-            />
-            <TextInput
-              {...activeAccountForm.getInputProps("lastname")}
-              required
-              label="Last Name"
-              placeholder="Enter Last Name"
-            />
-          </Group>
-          <Group grow justify="end">
-            <Select
-              {...DefaultSelectProps}
-              required={true}
-              {...activeAccountForm.getInputProps("gender")}
-              label="Gender"
-              placeholder="Select gender"
-              data={[
-                {
-                  label: "Male",
-                  value: "male",
-                },
-                {
-                  label: "Female",
-                  value: "female",
-                },
-              ]}
-            />
-            <DateInput
-              {...activeAccountForm.getInputProps("birthday")}
-              required
-              label="Date of Birth"
-              placeholder="Enter Date of Birth"
-            />
-          </Group>
-          <Group grow justify="end">
-            <TextInput
-              {...activeAccountForm.getInputProps("student_id")}
-              readOnly
-              label="Student ID"
-              placeholder="Enter Student ID"
-            />
-            <TextInput
-              {...activeAccountForm.getInputProps("address")}
-              label="Address"
-              placeholder="Enter Address"
-            />
-          </Group>
-          <Group grow justify="end">
-            <TextInput
-              {...activeAccountForm.getInputProps("email")}
-              readOnly
-              label="Email"
-              placeholder="Enter Email"
-            />
-            <PasswordInput
-              {...activeAccountForm.getInputProps("password")}
-              label="Password"
-              placeholder="Enter Password"
-            />
-          </Group>
-
-          <div className="text-right">
-            <Button type="submit" loading={loadingActiveAccount}>
-              Save Changes
-            </Button>
-          </div>
-        </form>
-      </CustomModal>
-
-      <CustomModal
-        title="Edit Appointment"
-        opened={editAppointmentState}
-        onClose={() => {
-          closeEditAppointmentState();
-          openAppointmentState();
+    <div>
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: "10px",
+          backgroundColor: "rgb(4, 55, 133)",
+          paddingTop: "8px",
+          paddingBottom: " 8px",
         }}
       >
-        <form
-          className="space-y-2"
-          onSubmit={editAppointmentForm.onSubmit(submitEditAppointment)}
-        >
-          <Select
-            {...editAppointmentForm.getInputProps("section_id")}
-            {...DefaultSelectProps}
-            placeholder="Select section"
-            label="Section"
-            data={sections.map((v) => ({
-              label: `${v.course} ${v.year_level[0]}${v.section}`,
-              value: v.id.toString(),
-            }))}
-          />
-          <CheckboxCard>
-            <CheckboxGroup {...editAppointmentForm.getInputProps("reasons")}>
-              <div className="space-y-2 px-4 py-3">
-                <Text mb={10} ff="montserrat-bold">
-                  Reason of Appointment
-                </Text>
-                {reasons.map((value, i) => {
-                  return (
-                    <Checkbox
-                      key={i}
-                      label={value.reason}
-                      value={value.reason}
-                    />
-                  );
-                })}
-              </div>
-            </CheckboxGroup>
-          </CheckboxCard>
-          <Textarea
-            {...editAppointmentForm.getInputProps("note")}
-            rows={3}
-            label="Note or Message (Optional)"
-            placeholder="Enter your message or note"
-          />
-          <div className="flex justify-center">
-            <DatePicker
-              getDayProps={(_) => ({
-                renderDay(data) {
-                  const dateString = data.toDateString();
-                  const fn = disabledDates.find(
-                    (dd) => new Date(dd.date).toDateString() === dateString
-                  );
-                  const pn = pendingAppointments.find(
-                    (dd) =>
-                      new Date(dd.appointment_date).toDateString() ===
-                      dateString
-                  );
-
-                  if (fn) {
-                    return (
-                      <Tooltip
-                        withArrow
-                        label={fn.description || "No Description"}
-                      >
-                        <div>{data.getDate()}</div>
-                      </Tooltip>
-                    );
-                  }
-
-                  if (pn) {
-                    return (
-                      <Tooltip
-                        withArrow
-                        label="You already have an appointment here."
-                      >
-                        <div className="text-blue-500">{data.getDate()}</div>
-                      </Tooltip>
-                    );
-                  }
-
-                  return <div>{data.getDate()}</div>;
-                },
-              })}
-              excludeDate={(date) => {
-                const dateString = date.toDateString();
-                const pn = pendingAppointments.find(
-                  (dd) =>
-                    new Date(dd.appointment_date).toDateString() === dateString
-                );
-                return (
-                  disabledDates.some(
-                    (v) => new Date(v.date).toDateString() == dateString
-                  ) ||
-                  date.getDay() === 0 ||
-                  !!pn
-                );
-              }}
-              {...editAppointmentForm.getInputProps("appointment_date")}
-              size="md"
-              minDate={new Date()}
-              maxDate={new Date(new Date().setMonth(new Date().getMonth() + 3))}
-            />
-          </div>
-          <Select
-            {...DefaultSelectProps}
-            disabled={!editAppointmentForm.values.appointment_date}
-            {...editAppointmentForm.getInputProps("appointment_time")}
-            placeholder="Select time here..."
-            label="Time of Appointment"
-            data={appointmentTime.map((tm) => {
-              const ap = filteredAppointment.filter(
-                (v) => v.appointment_time === tm.time
-              );
-              const count = tm.max - ap.length;
-              return {
-                label: `${tm.time} (${count})`,
-                value: tm.time,
-                disabled: count === 0,
-              };
-            })}
-          />
-          <Button
-            fullWidth
-            mt={10}
-            type="submit"
-            loading={loadingEditAppointment}
+        <img
+          src='/assets/granbylogowhite.png'
+          alt='Granby Logo'
+          style={{ width: "105px", display: "flex", marginRight: "20px" }}
+        />
+        <h1 style={{ fontSize: "35px", color: "white", fontWeight: "bold" }}>
+          Granby Colleges of Science and Technology
+          <h6
+            style={{ fontSize: "15px", display: "flex", fontWeight: "normal" }}
           >
-            Save Changes
-          </Button>
-        </form>
-      </CustomModal>
-
-      <CustomModal
-        size={1000}
-        title="Appointment History"
-        opened={appointmentState}
-        onClose={closeAppointmentState}
+            {" "}
+            <IconMapPin
+              size={20}
+              color='white'
+              style={{ marginRight: "5px" }}
+            />
+            265-A Ibayo Silangan, Naic, 4110 Cavite
+          </h6>
+          <h6
+            style={{ fontSize: "15px", display: "flex", fontWeight: "normal" }}
+          >
+            {" "}
+            <IconPhone
+              size={20}
+              color='white'
+              style={{ marginRight: "5px" }}
+            />
+            (046)4120437
+          </h6>
+        </h1>
+      </header>
+      <Container
+        style={{
+          backgroundColor: "whitesmoke",
+          boxShadow: "12px 12px 12px gray",
+        }}
       >
-        <div className="w-full overflow-x-scroll">
-          <Table withColumnBorders withRowBorders>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Code</Table.Th>
-                <Table.Th w={350}>Appointment</Table.Th>
-                <Table.Th>Date</Table.Th>
-                <Table.Th>Time</Table.Th>
-                <Table.Th>Status</Table.Th>
-                <Table.Th>Action</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {appointments?.map((row: AppointmentProps) => {
-                return (
-                  <Table.Tr>
-                    <Table.Td>
-                      <Text title={row.qrcode} truncate>
-                        {row.qrcode}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td miw={300}>
-                      <List listStyleType="disc">
-                        {row.reasons.map((re, i) => (
-                          <List.Item key={i}>{re}</List.Item>
-                        ))}
-                      </List>
-                    </Table.Td>
-                    <Table.Td miw={110}>
-                      {row.appointment_date
-                        ? formatDate(new Date(row.appointment_date))
-                        : "-"}
-                    </Table.Td>
-                    <Table.Td miw={120}>{row.appointment_time || "-"}</Table.Td>
-                    <Table.Td
-                      c={
-                        row.status.toLowerCase() === "completed"
-                          ? "green"
-                          : row.status.toLowerCase() === "cancelled"
-                          ? "red"
-                          : "blue"
-                      }
-                    >
-                      {row.status.toUpperCase()}
-                    </Table.Td>
-                    <Table.Td>
-                      <Menu withArrow shadow="md">
-                        <Menu.Target>
-                          <ActionIcon>
-                            <IconDotsVertical size={16} />
-                          </ActionIcon>
-                        </Menu.Target>
-                        <Menu.Dropdown w={200}>
-                          <Menu.Item
-                            onClick={() => viewDetailsEventHandler(row)}
-                          >
-                            View Details
-                          </Menu.Item>
-                          <Menu.Item
-                            disabled={row.status.toLowerCase() !== "pending"}
-                            onClick={() => {
-                              editAppointmentForm.setValues({
-                                id: row.id,
-                                section_id: row.section_id.toString(),
-                                reasons: row.reasons,
-                                note: row.note,
-                                appointment_date: row.appointment_date,
-                                appointment_time: row.appointment_time,
-                              });
+        <LoadingOverlay visible={loadingPage} />
 
-                              openEditAppointmentState();
-                              closeAppointmentState();
-                            }}
-                          >
-                            Edit Appointment
-                          </Menu.Item>
-                          <Menu.Item
-                            disabled={row.status.toLowerCase() !== "pending"}
-                            onClick={async () => {
-                              const conf = await displayConfirmation(
-                                "Confirmation",
-                                "Are you sure you want to cancel this appointment?"
-                              );
-                              if (!conf) return;
-                              const load = new LoadingClass();
-                              load.show("Loading...");
-                              await supabase
-                                .from("appointments")
-                                .update({
-                                  status: "cancelled",
-                                  staff_name: "You canceled this appointment.",
-                                  message: "Cancelled",
-                                  updated_at: new Date(),
-                                })
-                                .eq("id", row.id);
-                              load.close();
-                            }}
-                          >
-                            Cancel Appointment
-                          </Menu.Item>
-                        </Menu.Dropdown>
-                      </Menu>
-                    </Table.Td>
-                  </Table.Tr>
-                );
-              })}
-            </Table.Tbody>
-            {appointments?.length === 0 && (
-              <Table.Caption>No Record Found</Table.Caption>
-            )}
-          </Table>
-        </div>
-      </CustomModal>
-
-      <CustomModal
-        title="Forgot Password"
-        opened={forgotPasswordState}
-        onClose={closeForgotPasswordState}
-      >
-        <form
-          onSubmit={forgotPasswordForm.onSubmit(forgotPasswordEventHandler)}
+        <CustomModal
+          title='Account'
+          opened={accountState}
+          onClose={closeAccountState}
         >
-          <TextInput
-            {...forgotPasswordForm.getInputProps("email")}
-            required
-            type="email"
-            label="Email Address"
-            placeholder="Enter email address"
-          />
-          <div className="text-right">
-            <Button loading={loadingForgotPassword} type="submit" mt={10}>
-              Submit
-            </Button>
-          </div>
-        </form>
-      </CustomModal>
-
-      <Header
-        title='Appointment'
-        rightSection={
-          account ? (
-            <Menu withArrow>
-              <Menu.Target>
-                <div className="flex items-center gap-x-2 px-3 py-2 select-none active:opacity-80 cursor-pointer border border-slate-100 rounded-sm hover:bg-slate-200 hover:border-slate-400">
-                  <Text size="xs">
-                    {toProper(`${account.firstname} ${account.lastname}`)}
-                  </Text>
-                  <IconUser size={16} />
-                </div>
-              </Menu.Target>
-              <Menu.Dropdown
-                style={{
-                  boxShadow: "1px 2px 3px #0005",
-                }}
-                w={180}
-              >
-                <Menu.Item
-                  onClick={() => {
-                    activeAccountForm.setValues({
-                      ...account,
-                      birthday: new Date(account.birthday),
-                      password: "",
-                    });
-                    openAccountState();
-                  }}
-                  fz="sm"
-                  leftSection={<IconUser size={16} />}
-                >
-                  Account
-                </Menu.Item>
-                <Menu.Item
-                  fz="sm"
-                  leftSection={<IconCapProjecting size={16} />}
-                  onClick={openAppointmentState}
-                >
-                  Appointment
-                </Menu.Item>
-                <Menu.Item
-                  fz="sm"
-                  leftSection={<IconLogout2 size={16} />}
-                  onClick={logoutEventHandler}
-                >
-                  Log Out
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          ) : (
-            <div ref={ref}>
-              <Popover withArrow opened={popOverState} withinPortal={false}>
-                <Popover.Target>
-                  <Button
-                    onClick={() => setPopOverState(true)}
-                    variant="outline"
-                    rightSection={<IconUser size={15} />}
-                  >
-                    Sign In
-                  </Button>
-                </Popover.Target>
-                <Popover.Dropdown
-                  style={{
-                    boxShadow: "1px 2px 5px #0005",
-                    width: 300,
-                  }}
-                >
-                  <Text ff="montserrat-bold">Log In Account</Text>
-                  <Divider my={10} />
-                  <form
-                    onSubmit={accountForm.onSubmit(accountEventHandler)}
-                    className="pb-1 space-y-2"
-                  >
-                    <TextInput
-                      {...accountForm.getInputProps("email")}
-                      type="email"
-                      label="Email Address"
-                      required
-                      placeholder="Enter your email address"
-                    />
-                    <PasswordInput
-                      {...accountForm.getInputProps("password")}
-                      label="Password"
-                      required
-                      placeholder="Enter your password"
-                    />
-                    <div className="text-right">
-                      <p
-                        onClick={() => {
-                          openForgotPasswordState();
-                          setPopOverState(false);
-                        }}
-                        className="text-xs mb-2 hover:underline text-blue-500 cursor-pointer active:opacity-50 select-none"
-                      >
-                        Forgot Password
-                      </p>
-                    </div>
-                    <Divider />
-                    <div className="py-2">
-                      <Text size="xs">
-                        Don't have an account?{" "}
-                        <NavLink
-                          to="registration"
-                          className="hover:underline text-blue-500"
-                        >
-                          Register
-                        </NavLink>
-                      </Text>
-                    </div>
-                    <Button
-                      type="submit"
-                      fullWidth
-                      mt={6}
-                      loading={loadingLogin}
-                    >
-                      Sign In
-                    </Button>
-                  </form>
-                </Popover.Dropdown>
-              </Popover>
-            </div>
-          )
-        }
-      />
-    
-      {/* body */}
-      <div className="w-full h-[calc(100%-3.5rem)] p-5">
-        <Stepper
-          styles={{
-            content: {
-              paddingBottom: 60,
-            },
-            root: {
-              height: "calc(100vh - 12.55rem)",
-            },
-          }}
-          active={active}
-          onStepClick={setActive}
-          allowNextStepsSelect={false}
-        >
-          {/* STEP 1 : STUDENT INFORMATION */}
-          <Stepper.Step label="First step" description="Account Verification">
-            {steps.step1 ? (
-              <div>
-                <Text c="green" mt={10} ff="montserrat-bold" size="xl">
-                  Account Found!
-                </Text>
-                <Text>You can now proceed.</Text>
-              </div>
-            ) : (
-              <div>
-                <Text mt={10} ff="montserrat-bold" size="xl">
-                  Login Your Account First
-                </Text>
-                <Text>
-                  You need to check and verify whether your account already
-                  exists before proceeding.
-                </Text>
-              </div>
-            )}
-            <div className="flex gap-x-1 mt-5">
-              <Button
-                onClick={async () => {
-                  if (!account) {
-                    displayError(
-                      "Error",
-                      "Account Not Found. Please Login First."
-                    );
-                    return;
-                  }
-                  setSteps((curr) => ({ ...curr, step1: account }));
-                }}
-                rightSection={<IconArrowRight size={16} />}
-              >
-                Get My Account Information
-              </Button>
-              <Button
-                onClick={() =>
-                  setSteps((curr) => ({
-                    ...curr,
-                    step1: undefined,
-                  }))
-                }
-                color="red"
-                disabled={!steps.step1}
-              >
-                Reset
-              </Button>
-            </div>
-            {steps.step1 && (
-              <div className="py-3">
-                <Table withRowBorders>
-                  <Table.Tbody>
-                    <Table.Tr>
-                      <Table.Th w={200}>Student Name</Table.Th>
-                      <Table.Td>
-                        {toProper(
-                          `${steps.step1.firstname} ${steps.step1.lastname}`
-                        )}
-                      </Table.Td>
-                    </Table.Tr>
-                    <Table.Tr>
-                      <Table.Th>Student ID</Table.Th>
-                      <Table.Td>{steps.step1.student_id}</Table.Td>
-                    </Table.Tr>
-                    <Table.Tr>
-                      <Table.Th>Gender</Table.Th>
-                      <Table.Td>{toProper(steps.step1.gender)}</Table.Td>
-                    </Table.Tr>
-                    <Table.Tr>
-                      <Table.Th>Date of Birth</Table.Th>
-                      <Table.Td>
-                        {formatDate(new Date(steps.step1.birthday))}
-                      </Table.Td>
-                    </Table.Tr>
-                    <Table.Tr>
-                      <Table.Th>Addrress</Table.Th>
-                      <Table.Td>
-                        {steps.step1.address || "No Address Provided"}
-                      </Table.Td>
-                    </Table.Tr>
-                    <Table.Tr>
-                      <Table.Th>Email Address</Table.Th>
-                      <Table.Td>{steps.step1.email}</Table.Td>
-                    </Table.Tr>
-                  </Table.Tbody>
-                </Table>
-
-                <div className="flex items-center justify-center">
-                  <Group justify="center" mt="xl">
-                    <Button disabled variant="default" onClick={prevStep}>
-                      Back
-                    </Button>
-                    <Button onClick={nextStep} disabled={!steps.step1}>
-                      Next step
-                    </Button>
-                  </Group>
-                </div>
-              </div>
-            )}
-          </Stepper.Step>
-          {/* STEP 2 : APPOINTMENT */}
-          <Stepper.Step label="Second step" description="Appointment">
-            <div>
-              <Select
-                className="md:w-[300px] w-full"
-                {...DefaultSelectProps}
-                label="Section"
-                placeholder="Select your section"
-                data={sections.map((sec) => ({
-                  label:
-                    `${sec.course} ${sec.year_level[0]}${sec.section}`.toUpperCase(),
-                  value: sec.id.toString(),
-                }))}
-                value={selectedSection}
-                onChange={setSelectedSection}
+          <form
+            className='space-y-3'
+            onSubmit={activeAccountForm.onSubmit(submitActiveAccountForm)}
+          >
+            <Group
+              grow
+              justify='start'
+            >
+              <TextInput
+                {...activeAccountForm.getInputProps("firstname")}
+                required
+                label='First Name'
+                placeholder='Enter First Name'
               />
-              <CheckboxCard mt={20}>
-                <CheckboxGroup
-                  onChange={(values) => {
-                    // Splitting the values into reasons and prices
-                    const splitReasonsAndPrices = values.map((value) => {
-                      const reason = value.split(" - ")[0]; // Assuming the reason comes before " - "
-                      const price = value.split(" - ")[1];  // Assuming the price comes after " - "
-                      
-                      return { reason, price };
-                    });
-              
-                    // Update the state
-                    setSteps((curr) => ({
-                      ...curr, // Retain previous state
-                      step2: splitReasonsAndPrices, // Update step2 with the split data
-                    }));
-                  }}
-                >
-                  <div className="space-y-2 px-4 py-3">
-                    <Text mb={10} ff="montserrat-bold">
-                      Reason of Appointment
-                    </Text>
-                    {reasons.map((value, i) => {
-                      const reason = value.reason ? value.reason : '';
-                      const price = value.price ? value.price : 0;
-                      const priceconverted = Number(price); // convert string → number
-                      // Format label/value depending on price
-                      const displayPrice = priceconverted > 0 ? `₱ ${price}` : '';
-                    
-                      return (
-                        <Checkbox
-                          key={i}
-                          label={`${reason}${displayPrice ? ' - ' + displayPrice : ''}`}
-                          value={`${reason} - ${price}`}
-                        />
-                      );
-                    })}
-                  </div>
-                </CheckboxGroup>
-              </CheckboxCard>
-              <Textarea
-                value={noteValue}
-                onChange={(e) => setNoteValue(e.target.value)}
-                mt={10}
-                rows={3}
-                label="Note or Message (Optional)"
-                placeholder="Enter your message or note"
+              <TextInput
+                {...activeAccountForm.getInputProps("lastname")}
+                required
+                label='Last Name'
+                placeholder='Enter Last Name'
               />
-            </div>
-            <Group justify="center" mt="xl">
-              <Button variant="default" onClick={prevStep}>
-                Back
-              </Button>
-              <Button
-                disabled={
-                  !(steps.step2 && steps.step2.length > 0 && selectedSection)
-                }
-                onClick={nextStep}
-              >
-                Next step
-              </Button>
             </Group>
-          </Stepper.Step>
-          {/* STEP 3 : DATE AND TIME */}
-          <Stepper.Step label="Third step" description="Appointment Date">
-            <div className="flex items-center justify-center gap-x-5 flex-col md:flex-row">
+            <Group
+              grow
+              justify='end'
+            >
+              <Select
+                {...DefaultSelectProps}
+                required={true}
+                {...activeAccountForm.getInputProps("gender")}
+                label='Gender'
+                placeholder='Select gender'
+                data={[
+                  {
+                    label: "Male",
+                    value: "male",
+                  },
+                  {
+                    label: "Female",
+                    value: "female",
+                  },
+                ]}
+              />
+              <DateInput
+                {...activeAccountForm.getInputProps("birthday")}
+                required
+                label='Date of Birth'
+                placeholder='Enter Date of Birth'
+              />
+            </Group>
+            <Group
+              grow
+              justify='end'
+            >
+              <TextInput
+                {...activeAccountForm.getInputProps("student_id")}
+                readOnly
+                label='Student ID'
+                placeholder='Enter Student ID'
+              />
+              <TextInput
+                {...activeAccountForm.getInputProps("address")}
+                label='Address'
+                placeholder='Enter Address'
+              />
+            </Group>
+            <Group
+              grow
+              justify='end'
+            >
+              <TextInput
+                {...activeAccountForm.getInputProps("email")}
+                readOnly
+                label='Email'
+                placeholder='Enter Email'
+              />
+              <PasswordInput
+                {...activeAccountForm.getInputProps("password")}
+                label='Password'
+                placeholder='Enter Password'
+              />
+            </Group>
+
+            <div className='text-right'>
+              <Button
+                type='submit'
+                loading={loadingActiveAccount}
+              >
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </CustomModal>
+
+        <CustomModal
+          title='Edit Appointment'
+          opened={editAppointmentState}
+          onClose={() => {
+            closeEditAppointmentState();
+            openAppointmentState();
+          }}
+        >
+          <form
+            className='space-y-2'
+            onSubmit={editAppointmentForm.onSubmit(submitEditAppointment)}
+          >
+            <Select
+              {...editAppointmentForm.getInputProps("section_id")}
+              {...DefaultSelectProps}
+              placeholder='Select section'
+              label='Section'
+              data={sections.map((v) => ({
+                label: `${v.course} ${v.year_level[0]}${v.section}`,
+                value: v.id.toString(),
+              }))}
+            />
+            <CheckboxCard>
+              <CheckboxGroup {...editAppointmentForm.getInputProps("reasons")}>
+                <div className='space-y-2 px-4 py-3'>
+                  <Text
+                    mb={10}
+                    ff='montserrat-bold'
+                  >
+                    Reason of Appointment
+                  </Text>
+                  {reasons.map((value, i) => {
+                    return (
+                      <Checkbox
+                        key={i}
+                        label={value.reason}
+                        value={value.reason}
+                      />
+                    );
+                  })}
+                </div>
+              </CheckboxGroup>
+            </CheckboxCard>
+            <Textarea
+              {...editAppointmentForm.getInputProps("note")}
+              rows={3}
+              label='Note or Message (Optional)'
+              placeholder='Enter your message or note'
+            />
+            <div className='flex justify-center'>
               <DatePicker
                 getDayProps={(_) => ({
                   renderDay(data) {
                     const dateString = data.toDateString();
                     const fn = disabledDates.find(
-                      (dd) => new Date(dd.date).toDateString() === dateString
+                      (dd) => new Date(dd.date).toDateString() === dateString,
                     );
                     const pn = pendingAppointments.find(
                       (dd) =>
                         new Date(dd.appointment_date).toDateString() ===
-                        dateString
+                        dateString,
                     );
 
                     if (fn) {
@@ -1393,9 +961,9 @@ function Home() {
                       return (
                         <Tooltip
                           withArrow
-                          label="You already have an appointment here."
+                          label='You already have an appointment here.'
                         >
-                          <div className="text-blue-500">{data.getDate()}</div>
+                          <div className='text-blue-500'>{data.getDate()}</div>
                         </Tooltip>
                       );
                     }
@@ -1408,151 +976,798 @@ function Home() {
                   const pn = pendingAppointments.find(
                     (dd) =>
                       new Date(dd.appointment_date).toDateString() ===
-                      dateString
+                      dateString,
                   );
                   return (
                     disabledDates.some(
-                      (v) => new Date(v.date).toDateString() == dateString
+                      (v) => new Date(v.date).toDateString() == dateString,
                     ) ||
                     date.getDay() === 0 ||
                     !!pn
                   );
                 }}
-                onChange={(e) => setSelectedDate(e)}
-                value={selectedDate}
-                size="md"
+                {...editAppointmentForm.getInputProps("appointment_date")}
+                size='md'
                 minDate={new Date()}
                 maxDate={
                   new Date(new Date().setMonth(new Date().getMonth() + 3))
                 }
               />
-              <Select
-                {...DefaultSelectProps}
-                disabled={!selectedDate}
-                value={selectedTime}
-                className="w-[300px] md:w-[200px] mt-3"
-                onChange={setSelectedTime}
-                placeholder="Select time here..."
-                label="Time of Appointment"
-                data={appointmentTime.map((tm) => {
-                  const ap = filteredAppointment.filter(
-                    (v) => v.appointment_time === tm.time
-                  );
-                  const count = tm.max - ap.length;
-                  return {
-                    label: `${tm.time} (${count})`,
-                    value: tm.time,
-                    disabled: count === 0,
-                  };
-                })}
-              />
             </div>
-            <Group justify="center" mt="xl">
-              <Button variant="default" onClick={prevStep}>
-                Back
-              </Button>
+            <Select
+              {...DefaultSelectProps}
+              disabled={!editAppointmentForm.values.appointment_date}
+              {...editAppointmentForm.getInputProps("appointment_time")}
+              placeholder='Select time here...'
+              label='Time of Appointment'
+              data={appointmentTime.map((tm) => {
+                const ap = filteredAppointment.filter(
+                  (v) => v.appointment_time === tm.time,
+                );
+                const count = tm.max - ap.length;
+                return {
+                  label: `${tm.time} (${count})`,
+                  value: tm.time,
+                  disabled: count === 0,
+                };
+              })}
+            />
+            <Button
+              fullWidth
+              mt={10}
+              type='submit'
+              loading={loadingEditAppointment}
+            >
+              Save Changes
+            </Button>
+          </form>
+        </CustomModal>
+
+        <CustomModal
+          size={1000}
+          title='Appointment History'
+          opened={appointmentState}
+          onClose={closeAppointmentState}
+        >
+          <div className='w-full overflow-x-scroll'>
+            <Table
+              withColumnBorders
+              withRowBorders
+            >
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Code</Table.Th>
+                  <Table.Th w={350}>Appointment</Table.Th>
+                  <Table.Th>Date</Table.Th>
+                  <Table.Th>Time</Table.Th>
+                  <Table.Th>Status</Table.Th>
+                  <Table.Th>Action</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {appointments?.map((row: AppointmentProps) => {
+                  return (
+                    <Table.Tr>
+                      <Table.Td>
+                        <Text
+                          title={row.qrcode}
+                          truncate
+                        >
+                          {row.qrcode}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td miw={300}>
+                        <List listStyleType='disc'>
+                          {row.reasons.map((re, i) => (
+                            <List.Item key={i}>{re}</List.Item>
+                          ))}
+                        </List>
+                      </Table.Td>
+                      <Table.Td miw={110}>
+                        {row.appointment_date
+                          ? formatDate(new Date(row.appointment_date))
+                          : "-"}
+                      </Table.Td>
+                      <Table.Td miw={120}>
+                        {row.appointment_time || "-"}
+                      </Table.Td>
+                      <Table.Td
+                        c={
+                          row.status.toLowerCase() === "completed"
+                            ? "green"
+                            : row.status.toLowerCase() === "cancelled"
+                            ? "red"
+                            : "blue"
+                        }
+                      >
+                        {row.status.toUpperCase()}
+                      </Table.Td>
+                      <Table.Td>
+                        <Menu
+                          withArrow
+                          shadow='md'
+                        >
+                          <Menu.Target>
+                            <ActionIcon>
+                              <IconDotsVertical size={16} />
+                            </ActionIcon>
+                          </Menu.Target>
+                          <Menu.Dropdown w={200}>
+                            <Menu.Item
+                              onClick={() => viewDetailsEventHandler(row)}
+                            >
+                              View Details
+                            </Menu.Item>
+                            <Menu.Item
+                              disabled={row.status.toLowerCase() !== "pending"}
+                              onClick={() => {
+                                editAppointmentForm.setValues({
+                                  id: row.id,
+                                  section_id: row.section_id.toString(),
+                                  reasons: row.reasons,
+                                  note: row.note,
+                                  appointment_date: row.appointment_date,
+                                  appointment_time: row.appointment_time,
+                                });
+
+                                openEditAppointmentState();
+                                closeAppointmentState();
+                              }}
+                            >
+                              Edit Appointment
+                            </Menu.Item>
+                            <Menu.Item
+                              disabled={row.status.toLowerCase() !== "pending"}
+                              onClick={async () => {
+                                const conf = await displayConfirmation(
+                                  "Confirmation",
+                                  "Are you sure you want to cancel this appointment?",
+                                );
+                                if (!conf) return;
+                                const load = new LoadingClass();
+                                load.show("Loading...");
+                                await supabase
+                                  .from("appointments")
+                                  .update({
+                                    status: "cancelled",
+                                    staff_name:
+                                      "You canceled this appointment.",
+                                    message: "Cancelled",
+                                    updated_at: new Date(),
+                                  })
+                                  .eq("id", row.id);
+                                load.close();
+                              }}
+                            >
+                              Cancel Appointment
+                            </Menu.Item>
+                          </Menu.Dropdown>
+                        </Menu>
+                      </Table.Td>
+                    </Table.Tr>
+                  );
+                })}
+              </Table.Tbody>
+              {appointments?.length === 0 && (
+                <Table.Caption>No Record Found</Table.Caption>
+              )}
+            </Table>
+          </div>
+        </CustomModal>
+
+        <CustomModal
+          title='Forgot Password'
+          opened={forgotPasswordState}
+          onClose={closeForgotPasswordState}
+        >
+          <form
+            onSubmit={forgotPasswordForm.onSubmit(forgotPasswordEventHandler)}
+          >
+            <TextInput
+              {...forgotPasswordForm.getInputProps("email")}
+              required
+              type='email'
+              label='Email Address'
+              placeholder='Enter email address'
+            />
+            <div className='text-right'>
               <Button
-                disabled={!(selectedDate && selectedTime)}
-                onClick={nextStep}
+                loading={loadingForgotPassword}
+                type='submit'
+                mt={10}
               >
-                Proceed
+                Submit
               </Button>
-            </Group>
-          </Stepper.Step>
-          {/* STEP 4 : DOWNLOAD / END */}
-          <Stepper.Step label="Final step" description="Download">
-            <div>
-              <Text ff="montserrat-bold" size="xl">
-                Confirm Your Appointment
-              </Text>
+            </div>
+          </form>
+        </CustomModal>
+
+        <Header
+          title='Appointment'
+          rightSection={
+            account ? (
+              <Menu withArrow>
+                <Menu.Target>
+                  <div className='flex items-center gap-x-2 px-3 py-2 select-none active:opacity-80 cursor-pointer border border-slate-100 rounded-sm hover:bg-slate-200 hover:border-slate-400'>
+                    <Text size='xs'>
+                      {toProper(`${account.firstname} ${account.lastname}`)}
+                    </Text>
+                    <IconUser size={16} />
+                  </div>
+                </Menu.Target>
+                <Menu.Dropdown
+                  style={{
+                    boxShadow: "1px 2px 3px #0005",
+                  }}
+                  w={180}
+                >
+                  <Menu.Item
+                    onClick={() => {
+                      activeAccountForm.setValues({
+                        ...account,
+                        birthday: new Date(account.birthday),
+                        password: "",
+                      });
+                      openAccountState();
+                    }}
+                    fz='sm'
+                    leftSection={<IconUser size={16} />}
+                  >
+                    Account
+                  </Menu.Item>
+                  <Menu.Item
+                    fz='sm'
+                    leftSection={<IconCapProjecting size={16} />}
+                    onClick={openAppointmentState}
+                  >
+                    Appointment
+                  </Menu.Item>
+                  <Menu.Item
+                    fz='sm'
+                    leftSection={<IconLogout2 size={16} />}
+                    onClick={logoutEventHandler}
+                  >
+                    Log Out
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            ) : (
+              <div ref={ref}>
+                <Popover
+                  withArrow
+                  opened={popOverState}
+                  withinPortal={false}
+                >
+                  <Popover.Target>
+                    <Button
+                      onClick={() => setPopOverState(true)}
+                      variant='outline'
+                      rightSection={<IconUser size={15} />}
+                    >
+                      Sign In
+                    </Button>
+                  </Popover.Target>
+                  <Popover.Dropdown
+                    style={{
+                      boxShadow: "1px 2px 5px #0005",
+                      width: 300,
+                    }}
+                  >
+                    <Text ff='montserrat-bold'>Log In Account</Text>
+                    <Divider my={10} />
+                    <form
+                      onSubmit={accountForm.onSubmit(accountEventHandler)}
+                      className='pb-1 space-y-2'
+                    >
+                      <TextInput
+                        {...accountForm.getInputProps("email")}
+                        type='email'
+                        label='Email Address'
+                        required
+                        placeholder='Enter your email address'
+                      />
+                      <PasswordInput
+                        {...accountForm.getInputProps("password")}
+                        label='Password'
+                        required
+                        placeholder='Enter your password'
+                      />
+                      <div className='text-right'>
+                        <p
+                          onClick={() => {
+                            openForgotPasswordState();
+                            setPopOverState(false);
+                          }}
+                          className='text-xs mb-2 hover:underline text-blue-500 cursor-pointer active:opacity-50 select-none'
+                        >
+                          Forgot Password
+                        </p>
+                      </div>
+                      <Divider />
+                      <div className='py-2'>
+                        <Text size='xs'>
+                          Don't have an account?{" "}
+                          <NavLink
+                            to='registration'
+                            className='hover:underline text-blue-500'
+                          >
+                            Register
+                          </NavLink>
+                        </Text>
+                      </div>
+                      <Button
+                        type='submit'
+                        fullWidth
+                        mt={6}
+                        loading={loadingLogin}
+                      >
+                        Sign In
+                      </Button>
+                    </form>
+                  </Popover.Dropdown>
+                </Popover>
+              </div>
+            )
+          }
+        />
+
+        {/* body */}
+        <div className='w-full h-[calc(100%-3.5rem)] p-5'>
+          <Stepper
+            styles={{
+              content: {
+                paddingBottom: 60,
+              },
+              root: {
+                height: "calc(100vh - 12.55rem)",
+              },
+            }}
+            active={active}
+            onStepClick={setActive}
+            allowNextStepsSelect={false}
+          >
+            {/* STEP 1 : STUDENT INFORMATION */}
+            <Stepper.Step
+              label='First step'
+              description='Account Verification'
+            >
+              {steps.step1 ? (
+                <div>
+                  <Text
+                    c='green'
+                    mt={10}
+                    ff='montserrat-bold'
+                    size='xl'
+                  >
+                    Account Found!
+                  </Text>
+                  <Text>You can now proceed.</Text>
+                </div>
+              ) : (
+                <div>
+                  <Text
+                    mt={10}
+                    ff='montserrat-bold'
+                    size='xl'
+                  >
+                    Login Your Account First
+                  </Text>
+                  <Text>
+                    You need to check and verify whether your account already
+                    exists before proceeding.
+                  </Text>
+                </div>
+              )}
+              <div className='flex gap-x-1 mt-5'>
+                <Button
+                  onClick={async () => {
+                    if (!account) {
+                      displayError(
+                        "Error",
+                        "Account Not Found. Please Login First.",
+                      );
+                      return;
+                    }
+                    setSteps((curr) => ({ ...curr, step1: account }));
+                  }}
+                  rightSection={<IconArrowRight size={16} />}
+                >
+                  Get My Account Information
+                </Button>
+                <Button
+                  onClick={() =>
+                    setSteps((curr) => ({
+                      ...curr,
+                      step1: undefined,
+                    }))
+                  }
+                  color='red'
+                  disabled={!steps.step1}
+                >
+                  Reset
+                </Button>
+              </div>
               {steps.step1 && (
-                <div className="py-3">
-                  <Table withRowBorders withColumnBorders>
+                <div className='py-3'>
+                  <Table withRowBorders>
                     <Table.Tbody>
                       <Table.Tr>
-                        <Table.Th w={150}>Name</Table.Th>
+                        <Table.Th w={200}>Student Name</Table.Th>
                         <Table.Td>
                           {toProper(
-                            `${steps.step1.firstname} ${steps.step1.lastname}`
+                            `${steps.step1.firstname} ${steps.step1.lastname}`,
                           )}
-                        </Table.Td>
-                        <Table.Th w={150}>Date of Birth</Table.Th>
-                        <Table.Td>
-                          {formatDate(new Date(steps.step1.birthday))}
                         </Table.Td>
                       </Table.Tr>
                       <Table.Tr>
                         <Table.Th>Student ID</Table.Th>
                         <Table.Td>{steps.step1.student_id}</Table.Td>
+                      </Table.Tr>
+                      <Table.Tr>
+                        <Table.Th>Gender</Table.Th>
+                        <Table.Td>{toProper(steps.step1.gender)}</Table.Td>
+                      </Table.Tr>
+                      <Table.Tr>
+                        <Table.Th>Date of Birth</Table.Th>
+                        <Table.Td>
+                          {formatDate(new Date(steps.step1.birthday))}
+                        </Table.Td>
+                      </Table.Tr>
+                      <Table.Tr>
                         <Table.Th>Addrress</Table.Th>
                         <Table.Td>
                           {steps.step1.address || "No Address Provided"}
                         </Table.Td>
                       </Table.Tr>
                       <Table.Tr>
-                        <Table.Th>Gender</Table.Th>
-                        <Table.Td>{toProper(steps.step1.gender)}</Table.Td>
                         <Table.Th>Email Address</Table.Th>
                         <Table.Td>{steps.step1.email}</Table.Td>
                       </Table.Tr>
-                      <Table.Tr>
-                        <Table.Th>Section</Table.Th>
-                        <Table.Td>
-                          {(() => {
-                            const s = sections.find(
-                              (sec) => sec.id.toString() === selectedSection
-                            );
-                            if (!s) return "No Section Found";
-                            return `${s.course} ${s.year_level[0]}${s.section}`;
-                          })()}
-                        </Table.Td>
-                        <Table.Th>Date and Time</Table.Th>
-                        <Table.Td>{`${formatDate(
-                          selectedDate || new Date()
-                        )} |   
-                        ${selectedTime}`}</Table.Td>
-                      </Table.Tr>
                     </Table.Tbody>
                   </Table>
+
+                  <div className='flex items-center justify-center'>
+                    <Group
+                      justify='center'
+                      mt='xl'
+                    >
+                      <Button
+                        disabled
+                        variant='default'
+                        onClick={prevStep}
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        onClick={nextStep}
+                        disabled={!steps.step1}
+                      >
+                        Next step
+                      </Button>
+                    </Group>
+                  </div>
                 </div>
               )}
-              <Divider mb={15} />
-              <Text my={5} ff="montserrat-bold">
-                Reason of Appointment
-              </Text>
-              <List listStyleType="disc">
-                {steps.step2?.map((reason, i) => (
-                  <List.Item key={i}>{`${reason.reason} - ₱ ${reason.price}`}</List.Item>
-                ))}
-              </List>
-              <Divider mt={10} />
-              {noteValue && (
-                <div className="pt-2">
-                  <Text size="xs" c="dimmed">
-                    Notes:
-                  </Text>
-                  <Text size="md">{noteValue}</Text>
-                </div>
-              )}
-            </div>
-            <Group justify="center" mt="xl">
-              <Button variant="default" onClick={prevStep}>
-                Back
-              </Button>
-              <Button
-                loading={loadingAppointment}
-                onClick={() => {
-                  downloadEvent();
-                }}
-                rightSection={<IconDownload size={16} />}
+            </Stepper.Step>
+            {/* STEP 2 : APPOINTMENT */}
+            <Stepper.Step
+              label='Second step'
+              description='Appointment'
+            >
+              <div>
+                <Select
+                  className='md:w-[300px] w-full'
+                  {...DefaultSelectProps}
+                  label='Section'
+                  placeholder='Select your section'
+                  data={sections.map((sec) => ({
+                    label:
+                      `${sec.course} ${sec.year_level[0]}${sec.section}`.toUpperCase(),
+                    value: sec.id.toString(),
+                  }))}
+                  value={selectedSection}
+                  onChange={setSelectedSection}
+                />
+                <CheckboxCard mt={20}>
+                  <CheckboxGroup
+                    onChange={(values) => {
+                      // Splitting the values into reasons and prices
+                      const splitReasonsAndPrices = values.map((value) => {
+                        const reason = value.split(" - ")[0]; // Assuming the reason comes before " - "
+                        const price = value.split(" - ")[1]; // Assuming the price comes after " - "
+
+                        return { reason, price };
+                      });
+
+                      // Update the state
+                      setSteps((curr) => ({
+                        ...curr, // Retain previous state
+                        step2: splitReasonsAndPrices, // Update step2 with the split data
+                      }));
+                    }}
+                  >
+                    <div className='space-y-2 px-4 py-3'>
+                      <Text
+                        mb={10}
+                        ff='montserrat-bold'
+                      >
+                        Reason of Appointment
+                      </Text>
+                      {reasons.map((value, i) => {
+                        const reason = value.reason ? value.reason : "";
+                        const price = value.price ? value.price : 0;
+                        const priceconverted = Number(price); // convert string → number
+                        // Format label/value depending on price
+                        const displayPrice =
+                          priceconverted > 0 ? `₱ ${price}` : "";
+
+                        return (
+                          <Checkbox
+                            key={i}
+                            label={`${reason}${
+                              displayPrice ? " - " + displayPrice : ""
+                            }`}
+                            value={`${reason} - ${price}`}
+                          />
+                        );
+                      })}
+                    </div>
+                  </CheckboxGroup>
+                </CheckboxCard>
+                <Textarea
+                  value={noteValue}
+                  onChange={(e) => setNoteValue(e.target.value)}
+                  mt={10}
+                  rows={3}
+                  label='Note or Message (Optional)'
+                  placeholder='Enter your message or note'
+                />
+              </div>
+              <Group
+                justify='center'
+                mt='xl'
               >
-                Download & Save Appoinment
-              </Button>
-            </Group>
-          </Stepper.Step>
-        </Stepper>
-      </div>
-    </Container>
+                <Button
+                  variant='default'
+                  onClick={prevStep}
+                >
+                  Back
+                </Button>
+                <Button
+                  disabled={
+                    !(steps.step2 && steps.step2.length > 0 && selectedSection)
+                  }
+                  onClick={nextStep}
+                >
+                  Next step
+                </Button>
+              </Group>
+            </Stepper.Step>
+            {/* STEP 3 : DATE AND TIME */}
+            <Stepper.Step
+              label='Third step'
+              description='Appointment Date'
+            >
+              <div className='flex items-center justify-center gap-x-5 flex-col md:flex-row'>
+                <DatePicker
+                  getDayProps={(_) => ({
+                    renderDay(data) {
+                      const dateString = data.toDateString();
+                      const fn = disabledDates.find(
+                        (dd) => new Date(dd.date).toDateString() === dateString,
+                      );
+                      const pn = pendingAppointments.find(
+                        (dd) =>
+                          new Date(dd.appointment_date).toDateString() ===
+                          dateString,
+                      );
+
+                      if (fn) {
+                        return (
+                          <Tooltip
+                            withArrow
+                            label={fn.description || "No Description"}
+                          >
+                            <div>{data.getDate()}</div>
+                          </Tooltip>
+                        );
+                      }
+
+                      if (pn) {
+                        return (
+                          <Tooltip
+                            withArrow
+                            label='You already have an appointment here.'
+                          >
+                            <div className='text-blue-500'>
+                              {data.getDate()}
+                            </div>
+                          </Tooltip>
+                        );
+                      }
+
+                      return <div>{data.getDate()}</div>;
+                    },
+                  })}
+                  excludeDate={(date) => {
+                    const dateString = date.toDateString();
+                    const pn = pendingAppointments.find(
+                      (dd) =>
+                        new Date(dd.appointment_date).toDateString() ===
+                        dateString,
+                    );
+                    return (
+                      disabledDates.some(
+                        (v) => new Date(v.date).toDateString() == dateString,
+                      ) ||
+                      date.getDay() === 0 ||
+                      !!pn
+                    );
+                  }}
+                  onChange={(e) => setSelectedDate(e)}
+                  value={selectedDate}
+                  size='md'
+                  minDate={new Date()}
+                  maxDate={
+                    new Date(new Date().setMonth(new Date().getMonth() + 3))
+                  }
+                />
+                <Select
+                  {...DefaultSelectProps}
+                  disabled={!selectedDate}
+                  value={selectedTime}
+                  className='w-[300px] md:w-[200px] mt-3'
+                  onChange={setSelectedTime}
+                  placeholder='Select time here...'
+                  label='Time of Appointment'
+                  data={appointmentTime.map((tm) => {
+                    const ap = filteredAppointment.filter(
+                      (v) => v.appointment_time === tm.time,
+                    );
+                    const count = tm.max - ap.length;
+                    return {
+                      label: `${tm.time} (${count})`,
+                      value: tm.time,
+                      disabled: count === 0,
+                    };
+                  })}
+                />
+              </div>
+              <Group
+                justify='center'
+                mt='xl'
+              >
+                <Button
+                  variant='default'
+                  onClick={prevStep}
+                >
+                  Back
+                </Button>
+                <Button
+                  disabled={!(selectedDate && selectedTime)}
+                  onClick={nextStep}
+                >
+                  Proceed
+                </Button>
+              </Group>
+            </Stepper.Step>
+            {/* STEP 4 : DOWNLOAD / END */}
+            <Stepper.Step
+              label='Final step'
+              description='Download'
+            >
+              <div>
+                <Text
+                  ff='montserrat-bold'
+                  size='xl'
+                >
+                  Confirm Your Appointment
+                </Text>
+                {steps.step1 && (
+                  <div className='py-3'>
+                    <Table
+                      withRowBorders
+                      withColumnBorders
+                    >
+                      <Table.Tbody>
+                        <Table.Tr>
+                          <Table.Th w={150}>Name</Table.Th>
+                          <Table.Td>
+                            {toProper(
+                              `${steps.step1.firstname} ${steps.step1.lastname}`,
+                            )}
+                          </Table.Td>
+                          <Table.Th w={150}>Date of Birth</Table.Th>
+                          <Table.Td>
+                            {formatDate(new Date(steps.step1.birthday))}
+                          </Table.Td>
+                        </Table.Tr>
+                        <Table.Tr>
+                          <Table.Th>Student ID</Table.Th>
+                          <Table.Td>{steps.step1.student_id}</Table.Td>
+                          <Table.Th>Addrress</Table.Th>
+                          <Table.Td>
+                            {steps.step1.address || "No Address Provided"}
+                          </Table.Td>
+                        </Table.Tr>
+                        <Table.Tr>
+                          <Table.Th>Gender</Table.Th>
+                          <Table.Td>{toProper(steps.step1.gender)}</Table.Td>
+                          <Table.Th>Email Address</Table.Th>
+                          <Table.Td>{steps.step1.email}</Table.Td>
+                        </Table.Tr>
+                        <Table.Tr>
+                          <Table.Th>Section</Table.Th>
+                          <Table.Td>
+                            {(() => {
+                              const s = sections.find(
+                                (sec) => sec.id.toString() === selectedSection,
+                              );
+                              if (!s) return "No Section Found";
+                              return `${s.course} ${s.year_level[0]}${s.section}`;
+                            })()}
+                          </Table.Td>
+                          <Table.Th>Date and Time</Table.Th>
+                          <Table.Td>{`${formatDate(
+                            selectedDate || new Date(),
+                          )} |   
+                        ${selectedTime}`}</Table.Td>
+                        </Table.Tr>
+                      </Table.Tbody>
+                    </Table>
+                  </div>
+                )}
+                <Divider mb={15} />
+                <Text
+                  my={5}
+                  ff='montserrat-bold'
+                >
+                  Reason of Appointment
+                </Text>
+                <List listStyleType='disc'>
+                  {steps.step2?.map((reason, i) => (
+                    <List.Item
+                      key={i}
+                    >{`${reason.reason} - ₱ ${reason.price}`}</List.Item>
+                  ))}
+                </List>
+                <Divider mt={10} />
+                {noteValue && (
+                  <div className='pt-2'>
+                    <Text
+                      size='xs'
+                      c='dimmed'
+                    >
+                      Notes:
+                    </Text>
+                    <Text size='md'>{noteValue}</Text>
+                  </div>
+                )}
+              </div>
+              <Group
+                justify='center'
+                mt='xl'
+              >
+                <Button
+                  variant='default'
+                  onClick={prevStep}
+                >
+                  Back
+                </Button>
+                <Button
+                  loading={loadingAppointment}
+                  onClick={() => {
+                    downloadEvent();
+                  }}
+                  rightSection={<IconDownload size={16} />}
+                >
+                  Download & Save Appoinment
+                </Button>
+              </Group>
+            </Stepper.Step>
+          </Stepper>
+        </div>
+      </Container>
     </div>
   );
 }
