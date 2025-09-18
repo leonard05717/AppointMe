@@ -1,7 +1,7 @@
 import { DatePickerInput } from "@mantine/dates";
 import PageContainer from "../../components/PageContainer";
 import { useEffect, useState } from "react";
-import { Button, Flex, List, Select, Table, Text } from "@mantine/core";
+import { Button, List, Select, Table, Text } from "@mantine/core";
 import { formatDate, toProper } from "../../helpers/methods";
 import { AppointmentProps, UserProps } from "../../types";
 import supabase from "../../supabase";
