@@ -28,6 +28,7 @@ export interface AppointmentProps {
   student_id: number;
   section_id: number;
   reasons: string[];
+  price: string[];
   note: string;
   message: string;
   staff_name: string | null;
@@ -42,6 +43,7 @@ export interface AppointmentProps {
 export interface ReasonProps {
   id: number;
   reason: string;
+  price: string;
   created_at: Date;
 }
 

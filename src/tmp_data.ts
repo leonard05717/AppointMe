@@ -57,6 +57,10 @@ export const tmpStatusList = [
     label: "Return",
     value: "return",
   },
+  {
+    label: "Paid",
+    value: "paid",
+  },
 ];
 
 export const tmpTimeSelection = [

@@ -23,6 +23,7 @@ interface SectionFormProps {
 interface ReasonFormProps {
   id: number;
   reason: string;
+  price: string;
   type: 'add' | 'edit';
 }
 
@@ -69,6 +70,10 @@ function Maintenance() {
       label: "Reason",
       field: "reason",
     },
+    {
+      label: "Price",
+      field: "price",
+    },
   ];
 
   const CourseColumns: ColumnProps<CourseFormProps>[] = [
@@ -99,6 +104,7 @@ function Maintenance() {
     initialValues: {
       id: 0,
       reason: "",
+      price:"",
       type: "add"
     },
   });
@@ -152,12 +158,13 @@ function Maintenance() {
     let result;
     if (data.type === "add") {
       result = await supabase.from("reasons").insert({
-        reason: toProper(data.reason)
+        reason: toProper(data.reason),
+        price: toProper(data.price)
       });
     } else {
       result = await supabase
         .from("reasons")
-        .update({ reason: toProper(data.reason) })
+        .update({ reason: toProper(data.reason) , price: toProper(data.price) })
         .eq("id", data.id);
     }
 
@@ -303,6 +310,7 @@ function Maintenance() {
 
       <LoadingOverlay visible={loadingPage} />
       
+      {/*Section */}
       <CustomModal
         onClose={closeSectionState}
         opened={sectionState}
@@ -339,6 +347,7 @@ function Maintenance() {
           onSubmit={reasonForm.onSubmit(reasonEventHandler)}
         >
           <Textarea {...reasonForm.getInputProps('reason')} rows={4} label="Reason" placeholder="Enter reason here..." required />
+          <Textarea {...reasonForm.getInputProps('price')} rows={4} label="Payment(optional)" placeholder="Enter price here..."  />
           <Button loading={loadingReason} type="submit">
             {reasonForm.values.type === "add" ? "Add Reason" : "Save Changes"}
           </Button>

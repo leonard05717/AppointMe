@@ -346,7 +346,7 @@ function Scan() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={3}
-            label="Message (Optional)"
+            label="Message"
             placeholder="You can leave a message here."
           />
           <div className="flex justify-end">
@@ -456,9 +456,11 @@ function Scan() {
               <div className="space-y-2 border-b border-b-slate-300 pb-3">
                 <Text ff="montserrat-medium">Reason of Appointment:</Text>
                 <List mt={10} size="sm" listStyleType="disc">
-                  {data.reasons.map((reason, i) => (
-                    <List.Item key={i}>{reason}</List.Item>
-                  ))}
+                            {data.reasons.map((reason, i) => (
+                         <List.Item key={i}>
+                          {reason} - ₱{data.price[i]}  {/* Assuming data.price and data.reasons have the same length */}
+                         </List.Item>
+                           ))}
                 </List>
                 <Divider my={15} />
                 <Text mt={10} ff="montserrat-medium">
@@ -482,6 +484,12 @@ function Scan() {
                   label="Time"
                   value={data.appointment_time || "None"}
                 />
+                <Divider my={15} />
+                
+                <Text mt={10} ff="montserrat-medium">
+                 Total: {data.price.reduce((total, value) => total + parseInt(value), 0)}
+                </Text>
+                <Divider my={15} />
               </div>
             </>
           ) : (

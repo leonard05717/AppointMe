@@ -53,8 +53,8 @@ function AdminMainHome() {
             Reasons:
           </Text>
           <List listStyleType="disc">
-            {appointment.reasons.map((v, i) => (
-              <List.Item key={i}>{v}</List.Item>
+            {appointment.reasons?.map((v, i) => (
+              <List.Item key={i}>{v} - ₱{appointment?.price && appointment.price[i] != null ? appointment.price[i] : "Price not available"}</List.Item>
             ))}
           </List>
           <Divider mt={10} mb={7} />
@@ -86,6 +86,7 @@ function AdminMainHome() {
             {formatDateAndTime(new Date(appointment.updated_at))}
           </Text>
         </div>
+     
       ),
     });
   }
@@ -107,6 +108,8 @@ function AdminMainHome() {
       }
       setLoadingPage(false);
       setAppointments(data || []);
+    console.log("Appointments:", data);
+
     };
 
     fetchAppointments();
@@ -201,13 +204,14 @@ function AdminMainHome() {
                 const s = search.toLowerCase().trim();
                 const qrCond = v.qrcode.toLowerCase().includes(s);
                 const sidCond = v.student.student_id.toLowerCase().includes(s);
+                const m = v.message?.toLowerCase().includes(s);
                 const secCond = `${course} ${year_level[0]}${section}`
                   .toLowerCase()
                   .includes(s);
                 const nmCond = `${v.student.firstname} ${v.student.lastname}`
                   .toLowerCase()
                   .includes(s);
-                return qrCond || sidCond || secCond || nmCond;
+                return qrCond || sidCond || secCond || nmCond || m ;
               })
               .map((appointment) => (
                 <Table.Tr
@@ -237,7 +241,7 @@ function AdminMainHome() {
                   >{`${appointment.section.course} ${appointment.section.year_level[0]}${appointment.section.section}`}</Table.Td>
                   <Table.Td>
                     <List listStyleType="disc">
-                      {appointment.reasons.map((li, i) => (
+                      {appointment.reasons?.map((li, i) => (
                         <List.Item key={i}>
                           <Text size="sm" px={10}>
                             {li}

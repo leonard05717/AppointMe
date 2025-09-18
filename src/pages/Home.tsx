@@ -66,7 +66,7 @@ interface AccountFormProps {
 
 interface StepsProps {
   step1: UserProps | undefined;
-  step2: string[] | undefined;
+  step2: { reason: string; price: string }[] | undefined; // Change this type
   step3: Date | undefined;
   step4: undefined;
 }
@@ -272,13 +272,17 @@ function Home() {
     if (!conf) return;
 
     setLoadingAppointment(true);
-
+    const priceinsert = steps.step2?.map((v) => {return v.price})
+    const reasoninsert = steps.step2?.map((c) => {return c.reason})
     const qrcode: string = generateRandomString(6).toUpperCase();
 
+    console.log(steps.step2)
+    console.log(priceinsert)
     const { error } = await supabase.from("appointments").insert({
       student_id: account.id,
       section_id: selectedSection,
-      reasons: steps.step2,
+      reasons: reasoninsert,
+      price: priceinsert,
       note: noteValue,
       appointment_date: new Date(selectedDate).toDateString(),
       appointment_time: selectedTime,
@@ -1284,11 +1288,19 @@ function Home() {
               />
               <CheckboxCard mt={20}>
                 <CheckboxGroup
-                  value={steps.step2}
                   onChange={(values) => {
+                    // Splitting the values into reasons and prices
+                    const splitReasonsAndPrices = values.map((value) => {
+                      const reason = value.split(" - ")[0]; // Assuming the reason comes before " - "
+                      const price = value.split(" - ")[1];  // Assuming the price comes after " - "
+                      
+                      return { reason, price };
+                    });
+              
+                    // Update the state
                     setSteps((curr) => ({
-                      ...curr,
-                      step2: values,
+                      ...curr, // Retain previous state
+                      step2: splitReasonsAndPrices, // Update step2 with the split data
                     }));
                   }}
                 >
@@ -1297,11 +1309,13 @@ function Home() {
                       Reason of Appointment
                     </Text>
                     {reasons.map((value, i) => {
+                      const reason = value.reason ? value.reason : ''; // Fallback to an empty string if null
+                      const price = value.price ? value.price : '';  
                       return (
                         <Checkbox
                           key={i}
-                          label={value.reason}
-                          value={value.reason}
+                          label={`${reason} - ₱ ${price}`}
+                          value={`${reason} - ${price}`}
                         />
                       );
                     })}
@@ -1491,7 +1505,7 @@ function Home() {
               </Text>
               <List listStyleType="disc">
                 {steps.step2?.map((reason, i) => (
-                  <List.Item key={i}>{reason}</List.Item>
+                  <List.Item key={i}>{`${reason.reason} - ₱ ${reason.price}`}</List.Item>
                 ))}
               </List>
               <Divider mt={10} />
@@ -1510,7 +1524,9 @@ function Home() {
               </Button>
               <Button
                 loading={loadingAppointment}
-                onClick={downloadEvent}
+                onClick={() => {
+                  downloadEvent();
+                }}
                 rightSection={<IconDownload size={16} />}
               >
                 Download & Save Appoinment

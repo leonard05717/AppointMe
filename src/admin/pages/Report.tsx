@@ -1,7 +1,7 @@
 import { DatePickerInput } from "@mantine/dates";
 import PageContainer from "../../components/PageContainer";
 import { useEffect, useState } from "react";
-import { Button, List, Select, Table, Text } from "@mantine/core";
+import { Button, Flex, List, Select, Table, Text } from "@mantine/core";
 import { formatDate, toProper } from "../../helpers/methods";
 import { AppointmentProps, UserProps } from "../../types";
 import supabase from "../../supabase";
@@ -11,6 +11,7 @@ import { DefaultSelectProps } from "../../assets/styles";
 type AppointmentDataProps = AppointmentProps & {
   student: UserProps;
 };
+
 
 function Report() {
   const [status, setStatus] = useState<string | null>(null);
@@ -148,20 +149,52 @@ function Report() {
                   <Table.Th>To Date:</Table.Th>
                   <Table.Td>{to ? formatDate(new Date(to)) : '-'}</Table.Td>
                 </Table.Tr>
-                <Table.Tr>
-                  <Table.Td colSpan={2}>Data:</Table.Td>
-                </Table.Tr>
+               
                 {tmpStatusList
                   .filter((v) => {
                     if (!status) return true;
-                    return v.value.toLowerCase() === status.toLowerCase();
+                    
+                    return v.value.toLowerCase() === status.toLowerCase() ;
                   })
-                  .map((stats, i) => (
+                  .map((stats, i) =>  {
+                    const arraytotal = filteredByDate.filter((c) => c.status =="completed" && c.message == "paid")
+                      .map((v) => {return v.price})
+                      const total = arraytotal.flat()
+                      .map((str) => parseInt(str, 10))  // Convert strings to integers
+                      .reduce((sum, value) => sum + value, 0);
+                      console.log(total)
+                    return (
                     <Table.Tr key={i}>
                       <Table.Th>{stats.label} Appointment</Table.Th>
-                      <Table.Td>{filteredByDate.filter((v) => v.status.toLowerCase() === stats.value.toLowerCase()).length}</Table.Td>
+                       <Table.Td>
+                       {(() => {
+                          if(stats.value.toLowerCase() == 'pending'){
+                              return filteredByDate.filter((v) => v.status.toLowerCase() === stats.value.toLowerCase()).length;
+                          }if (stats.label.toLowerCase() == 'completed'){
+                              return filteredByDate.filter((v) => v.status.toLowerCase() === stats.value.toLowerCase()).length;
+                          }if (stats.label.toLowerCase() == 'cancelled'){
+                            return filteredByDate.filter((v) => v.status.toLowerCase() === stats.value.toLowerCase()).length;
+                           }if (stats.label.toLowerCase() == 'return'){
+                            return filteredByDate.filter((v) => v.status.toLowerCase() === stats.value.toLowerCase()).length;
+                           }if (stats.label.toLowerCase() == 'paid'){
+                            return [
+                              filteredByDate.filter((v) => v.message?.toLowerCase() === stats.value.toLowerCase()).length,
+                              <div style={{paddingLeft:'240px' , display:'flex' , marginTop:'-20px'}}>
+                                <Table.Tr >
+                                <Table.Th >Total Appointment</Table.Th>
+                                <Table.Td>{total} </Table.Td>
+                                </Table.Tr>
+                              </div>
+                            ];
+                           }else{
+                            return "Not available";
+                          }
+                        })()}
+                      </Table.Td>
                     </Table.Tr>
-                  ))}
+                    )
+                  }
+                  )}
               </Table.Tbody>
             </Table>
 
@@ -178,13 +211,14 @@ function Report() {
                   <Table.Th>Reasons</Table.Th>
                   <Table.Th>Status</Table.Th>
                   <Table.Th>Date & Time</Table.Th>
+                  <Table.Th>Total</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
                 {filteredByDate
                   .filter((v) => {
                     if (!status) return true;
-                    return v.status.toLowerCase() === status.toLowerCase();
+                    return v.status.toLowerCase() === status.toLowerCase() || v.message?.toLowerCase() === status.toLowerCase() ;
                   })
                   .map((v) => (
                     <Table.Tr key={v.id}>
@@ -199,7 +233,17 @@ function Report() {
                         </List>
                       </Table.Td>
                       <Table.Td>{toProper(v.status)}</Table.Td>
-                      <Table.Td>{`${formatDate(new Date(v.appointment_date))} | ${v.appointment_time}`}</Table.Td>
+                      <Table.Td>{`${formatDate(new Date(v.appointment_date))}  ${v.appointment_time}`}</Table.Td>
+                      <Table.Td>  
+                      {(() => {
+                          if(v.status.toLowerCase() === 'pending' || v.status.toLowerCase() === 'cancelled'
+                          || v.status.toLowerCase() === 'return' ){
+                              return ''
+                          }else{
+                            return v.price?.reduce((total, value) => total + parseInt(value), 0);
+                          }
+                        })()}
+                        </Table.Td>
                     </Table.Tr>
                   ))}
               </Table.Tbody>
