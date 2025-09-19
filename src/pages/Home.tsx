@@ -1,6 +1,5 @@
 import {
   ActionIcon,
-  BackgroundImage,
   Button,
   Checkbox,
   CheckboxCard,
