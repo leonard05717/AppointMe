@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  BackgroundImage,
   Button,
   Checkbox,
   CheckboxCard,
@@ -666,7 +667,7 @@ function Home() {
   );
 
   return (
-    <Container>
+    <Container >
       <LoadingOverlay visible={loadingPage} />
 
       <CustomModal
@@ -1309,12 +1310,16 @@ function Home() {
                       Reason of Appointment
                     </Text>
                     {reasons.map((value, i) => {
-                      const reason = value.reason ? value.reason : ''; // Fallback to an empty string if null
-                      const price = value.price ? value.price : '';  
+                      const reason = value.reason ? value.reason : '';
+                      const price = value.price ? value.price : 0;
+                      const priceconverted = Number(price); // convert string → number
+                      // Format label/value depending on price
+                      const displayPrice = priceconverted > 0 ? `₱ ${price}` : '';
+                    
                       return (
                         <Checkbox
                           key={i}
-                          label={`${reason} - ₱ ${price}`}
+                          label={`${reason}${displayPrice ? ' - ' + displayPrice : ''}`}
                           value={`${reason} - ${price}`}
                         />
                       );

@@ -456,9 +456,9 @@ function Scan() {
               <div className="space-y-2 border-b border-b-slate-300 pb-3">
                 <Text ff="montserrat-medium">Reason of Appointment:</Text>
                 <List mt={10} size="sm" listStyleType="disc">
-                            {data.reasons.map((reason, i) => (
+                            {data.reasons?.map((reason, i) => (
                          <List.Item key={i}>
-                          {reason} - ₱{data.price[i]}  {/* Assuming data.price and data.reasons have the same length */}
+                          {reason} - ₱{data?.price && data.price[i] != null ? data.price[i] : 0}  {/* Assuming data.price and data.reasons have the same length */}
                          </List.Item>
                            ))}
                 </List>
@@ -487,7 +487,7 @@ function Scan() {
                 <Divider my={15} />
                 
                 <Text mt={10} ff="montserrat-medium">
-                 Total: {data.price.reduce((total, value) => total + parseInt(value), 0)}
+                 Total: {data?.price?.reduce((total, value) => total + (value ? parseInt(value) : 0),0)}
                 </Text>
                 <Divider my={15} />
               </div>
