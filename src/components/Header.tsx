@@ -12,7 +12,7 @@ interface HeaderProps {
  */
 function Header(props: HeaderProps) {
   return (
-    <div className="flex items-center justify-between h-14 border-b border-b-slate-400">
+    <div className="flex items-center justify-between h-14 border-b border-b-slate-400" >
       {props.leftSection ? (
         props.leftSection
       ) : (

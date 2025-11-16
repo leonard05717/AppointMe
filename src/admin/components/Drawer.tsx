@@ -30,13 +30,13 @@ function NavButton(props: NavButtonProps) {
 function Drawer({ user, state, setState }: DrawerProps) {
   return (
     <div className="w-full h-[calc(100%-3.5rem)] flex overflow-hidden">
-      <div data-open={state} className="w-[18rem] h-full flex fixed md:relative duration-200 -left-[18.5rem] md:left-0 bg-white z-10 top-0 border-r border-slate-300 shadow-md items-center py-5 flex-col data-[open=true]:left-0">
+      <div style={{backgroundColor: 'rgb(4, 55, 133)'}} data-open={state} className="w-[18rem] h-full flex fixed md:relative duration-200 -left-[18.5rem] md:left-0 bg-white z-10 top-0 border-r border-slate-300 shadow-md items-center py-5 flex-col data-[open=true]:left-0">
         <ScrollAreaAutosize>
           <div className="absolute top-3 right-3 md:hidden block">
             <CloseButton onClick={setState} />
           </div>
-          <Image className="border-b border-b-slate-400 pb-4 mb-2" w='16rem' h='16rem' src='/assets/appointment-bg.jpg' />
-          <div className="w-[18rem] px-4">
+          <Image className="border-b border-b-slate-400 pb-4 mb-2" w='16rem' fit="contain" h='16rem' src='/assets/ss.png' />
+          <div className="w-[18rem] px-4" style={{backgroundColor: 'rgb(4, 55, 133)' , color: 'white'}}>
             <NavButton onClick={setState} icon={IconDashboardFilled} label="Appointments" to="appointment" />
             <NavButton onClick={setState} icon={IconQrcode} label="Scan QR Code" to="scan" />
             {typeof user === 'object' && user !== null && user?.role === 'superadmin' && (
@@ -51,7 +51,7 @@ function Drawer({ user, state, setState }: DrawerProps) {
           </div>
         </ScrollAreaAutosize>
       </div>
-      <ScrollAreaAutosize h='100%' className="md:w-[calc(100%-18rem)] w-full" py={10}>
+      <ScrollAreaAutosize h='100%' className="md:w-[calc(100%-18rem)] w-full" py={10} style={{backgroundColor: 'white'}}>
         <Outlet />
       </ScrollAreaAutosize>
     </div>

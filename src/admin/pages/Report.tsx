@@ -181,7 +181,7 @@ function Report() {
                               filteredByDate.filter((v) => v.message?.toLowerCase() === stats.value.toLowerCase()).length,
                               <div style={{paddingLeft:'240px' , display:'flex' , marginTop:'-20px'}}>
                                 <Table.Tr >
-                                <Table.Th >Total Appointment</Table.Th>
+                                <Table.Th >Total Amount</Table.Th>
                                 <Table.Td>{total} </Table.Td>
                                 </Table.Tr>
                               </div>

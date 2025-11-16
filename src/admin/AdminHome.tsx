@@ -153,7 +153,7 @@ function AdminHome() {
   }
 
   return (
-    <div className="w-full h-screen relative">
+    <div className="w-full h-screen relative" style={{backgroundColor: 'rgb(4, 55, 133)'}}>
 
       <LoadingOverlay visible={loadingPage} />
 
@@ -175,24 +175,24 @@ function AdminHome() {
 
       </CustomModal>
 
-      <Header leftSection={(
+      <Header  leftSection={(
         <div className="pl-3 flex items-center gap-x-3">
           <div className="block md:hidden">
             <ActionIcon onClick={() => setDrawerState(curr => !curr)} variant="transparent" color="dark">
               <IconMenu2 />
             </ActionIcon>
           </div>
-          <Text ff="montserrat-bold" size="lg">Administrator</Text>
+          <Text ff="montserrat-bold" style={{color : 'white'}} size="xl">Administrator</Text>
         </div>
-      )} title="Admin" rightSection={(
+       )} title="Admin" rightSection={(
         <div className="pr-5">
           <Menu withArrow>
             <Menu.Target>
               <div className="w-full cursor-pointer p-1 rounded-md ml-5 flex items-center gap-x-2">
-                <Text
+                <Text style={{color: 'white'}}
                   size="sm"
                 >{toProper(`${user.firstname} ${user.lastname}`)}</Text>
-                <IconUser size={17} />
+                <IconUser size={27} color="white"/>
               </div>
             </Menu.Target>
             <Menu.Dropdown w={160} style={{

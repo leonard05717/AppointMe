@@ -181,9 +181,9 @@ function AdminMainHome() {
     >
       <LoadingOverlay visible={loadingPage} />
 
-      <div className="w-[calc(100vw-25px)] md:w-full overflow-x-scroll">
+      <div className="w-[calc(100vw-25px)] md:w-full overflow-x-scroll"  >
         <Table striped highlightOnHover withColumnBorders>
-          <Table.Thead>
+          <Table.Thead >
             <Table.Tr>
               <Table.Th>QR Code</Table.Th>
               <Table.Th>Student ID</Table.Th>
@@ -282,7 +282,7 @@ function AdminMainHome() {
               ))}
           </Table.Tbody>
           {appointments_.length === 0 && (
-            <Table.Caption>No Appointment Found</Table.Caption>
+            <Table.Caption >No Appointment Found</Table.Caption>
           )}
         </Table>
       </div>

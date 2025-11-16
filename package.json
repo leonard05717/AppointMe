@@ -16,7 +16,7 @@
     "@mantine/hooks": "^7.17.2",
     "@mantine/modals": "^7.17.2",
     "@mantine/notifications": "^7.17.2",
-    "@supabase/supabase-js": "^2.56.1",
+    "@supabase/supabase-js": "^2.57.0",
     "@tabler/icons-react": "^3.31.0",
     "@tailwindcss/vite": "^4.0.14",
     "@types/qrcode": "^1.5.5",

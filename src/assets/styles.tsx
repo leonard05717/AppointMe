@@ -11,5 +11,6 @@ export const DefaultSelectProps: SelectProps = {
     dropdown: {
       boxShadow: "1px 2px 5px #0005",
     },
+
   },
 };

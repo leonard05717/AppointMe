@@ -78,13 +78,17 @@ function Registration() {
   }
 
   return (
-    <Container className="py-7" size='xs'>
-      <div className="flex items-center justify-between">
-        <Text ff="montserrat-bold" size="xl">Registration Form</Text>
+    <div  >
+      <Container style={{marginTop: '100px' }}>
+    <div style={{ display: "flex" , justifyContent: 'center'}}>
+      <div style={{ backgroundColor : 'rgb(4, 55, 133)'}}>
+    <Container className="py-7" size='xs'  >
+      <div className="flex items-center justify-between" style={{color: 'white'}} >
+        <Text ff="montserrat-bold" size="xl" >Registration Form</Text>
         <NavLink className="text-sm hover:underline" to="/">Back to Home Page</NavLink>
       </div>
       <Divider my={20} />
-      <form onSubmit={userForm.onSubmit(submitUser)} className="space-y-4">
+      <form onSubmit={userForm.onSubmit(submitUser)} className="space-y-4" style={{color: 'white'}} >
         <Group grow justify="end">
           <TextInput maxLength={10} onKeyPress={(event) => {
             if (!/^[a-zA-Z\s]*$/.test(event.key)) {
@@ -129,8 +133,23 @@ function Registration() {
           <Checkbox checked={isNewStudent} onChange={(e) => setIsNewStudent(e.target.checked)} label="New Student" />
           <Button loading={loading} type="submit" mt={7}>Submit Registration</Button>
         </div>
+        
       </form>
     </Container>
+    </div>
+    <div style={{
+    backgroundImage: "url('/assets/mainbackground.jpg')",
+    backgroundSize: 'cover',
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    
+    width: '40%'
+  }} >
+          <img src="/assets/granbylogowhite.png" alt="Granby Logo" style={{ width: '200px'  , marginTop: '140px' , marginLeft: '90px' }} />
+    </div>
+    </div>
+    </Container>
+    </div>
   );
 }
 

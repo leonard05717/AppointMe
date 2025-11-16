@@ -28,6 +28,9 @@ import {
   IconDotsVertical,
   IconDownload,
   IconLogout2,
+  IconMap,
+  IconMapPin,
+  IconPhone,
   IconUser,
 } from "@tabler/icons-react";
 import { Navigate, NavLink, useNavigate } from "react-router-dom";
@@ -506,6 +509,7 @@ function Home() {
     );
     if (error) {
       console.error("Forgot Password Error:", error);
+      console.log("Error details:", error.status);
       setLoadingForgotPassword(false);
       displayError("Something error", error.message || "Unknown error");
       return;
@@ -666,7 +670,17 @@ function Home() {
   );
 
   return (
-    <Container >
+    <div >
+     <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' ,marginBottom:'10px'  , backgroundColor : 'rgb(4, 55, 133)' , paddingTop: '8px' , paddingBottom: ' 8px'}}>
+        <img src="/assets/granbylogowhite.png" alt="Granby Logo" style={{ width: '105px', display: 'flex' , marginRight: '20px'  }} />
+        <h1 style={{fontSize:'35px' , color: 'white' ,  fontWeight:'bold' }}>Granby Colleges of Science and Technology
+        <h6 style={{fontSize:'15px' , display: 'flex' , fontWeight: 'normal' }}> <IconMapPin size={20} color="white" style={{marginRight: '5px'}}/>265-A Ibayo Silangan, Naic, 4110 Cavite
+        </h6>
+        <h6 style={{fontSize:'15px' , display: 'flex' ,  fontWeight: 'normal' }}> <IconPhone size={20} color="white" style={{marginRight: '5px'}}/>(046)4120437</h6>
+        </h1>
+      </header>
+    <Container style={{backgroundColor:'whitesmoke' , boxShadow: '12px 12px 12px gray'}} >
+      
       <LoadingOverlay visible={loadingPage} />
 
       <CustomModal
@@ -1030,7 +1044,7 @@ function Home() {
       </CustomModal>
 
       <Header
-        title="Appointment"
+        title='Appointment'
         rightSection={
           account ? (
             <Menu withArrow>
@@ -1153,7 +1167,7 @@ function Home() {
           )
         }
       />
-
+    
       {/* body */}
       <div className="w-full h-[calc(100%-3.5rem)] p-5">
         <Stepper
@@ -1162,7 +1176,7 @@ function Home() {
               paddingBottom: 60,
             },
             root: {
-              height: "calc(100vh - 12rem)",
+              height: "calc(100vh - 12.55rem)",
             },
           }}
           active={active}
@@ -1540,6 +1554,7 @@ function Home() {
         </Stepper>
       </div>
     </Container>
+    </div>
   );
 }
 
