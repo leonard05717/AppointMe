@@ -28,7 +28,6 @@ import {
   IconDotsVertical,
   IconDownload,
   IconLogout2,
-  IconMap,
   IconMapPin,
   IconPhone,
   IconUser,
