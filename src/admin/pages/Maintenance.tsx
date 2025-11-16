@@ -347,20 +347,7 @@ function Maintenance() {
           onSubmit={reasonForm.onSubmit(reasonEventHandler)}
         >
           <Textarea {...reasonForm.getInputProps('reason')} rows={4} label="Reason" placeholder="Enter reason here..." required />
-          <Textarea {...reasonForm.getInputProps('price')}  rows={4} label="Payment(optional)" placeholder="Enter price here..."  onChange={(e) => {
-    let value = e.target.value;
-
-    // Allow only digits + decimal point
-    value = value.replace(/[^0-9.]/g, "");
-
-    // Prevent more than one decimal point
-    const parts = value.split(".");
-    if (parts.length > 2) {
-      value = parts[0] + "." + parts.slice(1).join("");
-    }
-
-    reasonForm.setFieldValue("price", value);
-  }} />
+          <Textarea {...reasonForm.getInputProps('price')}  rows={4} label="Payment(optional)" placeholder="Enter price here..."  />
           <Button loading={loadingReason} type="submit">
             {reasonForm.values.type === "add" ? "Add Reason" : "Save Changes"}
           </Button>
